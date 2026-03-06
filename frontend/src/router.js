@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import PaymentDemoPage from './views/PaymentDemoPage.vue'
+import KioskDemoPage from './views/KioskDemoPage.vue'
 import TestHistoryListPage from './views/TestHistoryListPage.vue'
 import TestHistoryDetailPage from './views/TestHistoryDetailPage.vue'
 
@@ -11,6 +12,11 @@ const router = createRouter({
       path: '/',
       name: 'payment-demo',
       component: PaymentDemoPage
+    },
+    {
+      path: '/kiosk-demo',
+      name: 'kiosk-demo',
+      component: KioskDemoPage
     },
     {
       path: '/test-histories',

@@ -20,10 +20,11 @@ run
 - DB 이름: `kicc_demo`
 - Redis 사용자: `redis`
 - Redis 비밀번호: `redis2586!`
-- 관리자 토큰: `ADMIN_TOKEN` 필수 (16자 이상)
+- 관리자 토큰: `ADMIN_TOKEN` 미설정 시 개발용 토큰 자동 생성(운영은 16자 이상 고정값 권장)
 
 ## 구현된 기능 (실승인 없이 테스트 가능)
 - 결제 준비/승인/상태조회
+- 키오스크 연동 데모(세션 생성/결제요청/단말 승인/단말 실패)
 - 전체취소, 부분환불, 환불이력 조회
 - 주문 상태머신 (`PAYMENT_PENDING/PAID/PARTIALLY_REFUNDED/REFUNDED/CANCELED/FAILED`)
 - 멱등키 처리 (`Idempotency-Key`)
@@ -48,6 +49,14 @@ run
 - `GET /api/admin/orders`
 - `GET /api/admin/audit-logs`
 - `POST /api/admin/reconcile-now`
+
+### 키오스크 데모 API
+- `POST /api/kiosk/sessions`
+- `POST /api/kiosk/sessions/{sessionId}/request-payment`
+- `POST /api/kiosk/sessions/{sessionId}/terminal-approve`
+- `POST /api/kiosk/sessions/{sessionId}/terminal-fail`
+- `GET /api/kiosk/sessions/{sessionId}`
+- `GET /api/kiosk/sessions`
 
 ## 환경변수
 - `ADMIN_TOKEN`

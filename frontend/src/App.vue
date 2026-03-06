@@ -7,6 +7,7 @@
       </div>
       <nav class="nav">
         <RouterLink to="/" class="nav-link">결제 데모</RouterLink>
+        <RouterLink to="/kiosk-demo" class="nav-link">키오스크 데모</RouterLink>
         <RouterLink to="/test-histories" class="nav-link">테스트 이력</RouterLink>
       </nav>
     </header>
