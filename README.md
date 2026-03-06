@@ -11,13 +11,15 @@ run
 ```
 
 - `bootrun`은 backend의 `./gradlew bootRun` 실행
-- bootRun 시 `backend/compose.yaml`로 MariaDB 자동 기동
+- bootRun 시 `backend/compose.yaml`로 MariaDB + Redis 자동 기동
 - `bootrun`은 `ADMIN_TOKEN` 미설정 시 개발용 토큰을 자동 생성해 출력
 
 ## 기본 계정/설정
 - DB 사용자: `root`
 - DB 비밀번호: `als@2586`
 - DB 이름: `kicc_demo`
+- Redis 사용자: `redis`
+- Redis 비밀번호: `redis2586!`
 - 관리자 토큰: `ADMIN_TOKEN` 필수 (16자 이상)
 
 ## 구현된 기능 (실승인 없이 테스트 가능)
@@ -25,6 +27,7 @@ run
 - 전체취소, 부분환불, 환불이력 조회
 - 주문 상태머신 (`PAYMENT_PENDING/PAID/PARTIALLY_REFUNDED/REFUNDED/CANCELED/FAILED`)
 - 멱등키 처리 (`Idempotency-Key`)
+- Redis 선점(NX) + 결과 캐시 기반 중복체크
 - 콜백 서명 검증 옵션 (`X-KICC-SIGNATURE`)
 - 관리자 API (결제/주문/감사로그/수동 보정)
 - 자동 보정 스케줄러 (오래된 READY 결제 자동 실패 처리 등)
@@ -54,6 +57,10 @@ run
 - `KICC_USE_MOCK_APPROVE`
 - `KICC_CALLBACK_SIGNATURE_REQUIRED`
   - 기본값: `true`
+- `REDIS_HOST`
+- `REDIS_PORT`
+- `REDIS_USERNAME`
+- `REDIS_PASSWORD`
 
 ## 실연동 시 교체 포인트
 - `KiccPayloadFactory`: KICC 실제 필드/서명 규격 반영
