@@ -10,6 +10,13 @@ public class AdminAuthService {
 
     public AdminAuthService(AppProperties appProperties) {
         this.appProperties = appProperties;
+        String token = appProperties.getSecurity().getAdminToken();
+        if (token == null || token.isBlank()) {
+            throw new IllegalStateException("ADMIN_TOKEN must be set");
+        }
+        if (token.length() < 16) {
+            throw new IllegalStateException("ADMIN_TOKEN must be at least 16 characters");
+        }
     }
 
     public void validateToken(String token) {

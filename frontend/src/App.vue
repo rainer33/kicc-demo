@@ -145,7 +145,7 @@ const refundReason = ref('고객 요청')
 const loading = ref(false)
 const error = ref('')
 
-const adminToken = ref('change-me-admin-token')
+const adminToken = ref('')
 const adminPayments = ref([])
 const adminOrders = ref([])
 const auditLogs = ref([])

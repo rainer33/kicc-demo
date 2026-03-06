@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ -z "${ADMIN_TOKEN:-}" ]]; then
+  ADMIN_TOKEN="dev-$(cat /proc/sys/kernel/random/uuid | tr -d '-')"
+  export ADMIN_TOKEN
+  echo "ADMIN_TOKEN not set. Using generated dev token: ${ADMIN_TOKEN}"
+fi
 cd "$(dirname "$0")/backend"
 ./gradlew bootRun
