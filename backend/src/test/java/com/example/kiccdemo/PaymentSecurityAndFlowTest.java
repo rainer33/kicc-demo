@@ -82,15 +82,16 @@ class PaymentSecurityAndFlowTest {
 
     @Test
     void idempotencyKeyReturnsSameOrderForSameRequest() throws Exception {
+        String idemKey = "idem-test-" + System.nanoTime();
         String first = mockMvc.perform(post("/api/payments/ready")
-                        .header("Idempotency-Key", "idem-test-001")
+                        .header("Idempotency-Key", idemKey)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"orderName\":\"idem-order\",\"buyerName\":\"user\",\"amount\":1000}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
         String second = mockMvc.perform(post("/api/payments/ready")
-                        .header("Idempotency-Key", "idem-test-001")
+                        .header("Idempotency-Key", idemKey)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"orderName\":\"idem-order\",\"buyerName\":\"user\",\"amount\":1000}"))
                 .andExpect(status().isOk())
