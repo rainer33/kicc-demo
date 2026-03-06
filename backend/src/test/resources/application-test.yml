@@ -1,0 +1,23 @@
+spring:
+  docker:
+    compose:
+      enabled: false
+  datasource:
+    url: jdbc:h2:mem:kicc;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  security:
+    admin-token: test-admin-token-1234
+  payment:
+    kicc:
+      merchant-id: TEST_MID
+      merchant-key: TEST_KEY
+      pay-url: https://pg.kicc.co.kr
+      use-mock-approve: true
+      callback-signature-required: true
