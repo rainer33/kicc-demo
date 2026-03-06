@@ -12,12 +12,13 @@ run
 
 - `bootrun`은 backend의 `./gradlew bootRun` 실행
 - bootRun 시 `backend/compose.yaml`로 MariaDB 자동 기동
+- `bootrun`은 `ADMIN_TOKEN` 미설정 시 개발용 토큰을 자동 생성해 출력
 
 ## 기본 계정/설정
 - DB 사용자: `root`
 - DB 비밀번호: `als@2586`
 - DB 이름: `kicc_demo`
-- 관리자 토큰 기본값: `change-me-admin-token`
+- 관리자 토큰: `ADMIN_TOKEN` 필수 (16자 이상)
 
 ## 구현된 기능 (실승인 없이 테스트 가능)
 - 결제 준비/승인/상태조회
@@ -52,6 +53,7 @@ run
 - `KICC_PAY_URL`
 - `KICC_USE_MOCK_APPROVE`
 - `KICC_CALLBACK_SIGNATURE_REQUIRED`
+  - 기본값: `true`
 
 ## 실연동 시 교체 포인트
 - `KiccPayloadFactory`: KICC 실제 필드/서명 규격 반영
