@@ -1,7 +1,11 @@
 package com.example.kiccdemo.service;
 
 import com.example.kiccdemo.config.AppProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 /**
  * 관리자 토큰 검증 서비스입니다. 토큰 정책(필수/길이)을 강제하고 요청 인증을 수행합니다.
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AdminAuthService {
 
+    private static final Logger log = LoggerFactory.getLogger(AdminAuthService.class);
     private final AppProperties appProperties;
 
     /** 애플리케이션 시작 시 관리자 토큰 정책을 검증합니다. */
@@ -20,7 +25,13 @@ public class AdminAuthService {
         this.appProperties = appProperties;
         String token = appProperties.getSecurity().getAdminToken();
         if (token == null || token.isBlank()) {
-            throw new IllegalStateException("ADMIN_TOKEN must be set");
+            if (appProperties.getSecurity().isAllowGeneratedAdminToken()) {
+                token = "dev-" + UUID.randomUUID().toString().replace("-", "");
+                appProperties.getSecurity().setAdminToken(token);
+                log.warn("ADMIN_TOKEN was not set. Generated temporary admin token for this run: {}", token);
+            } else {
+                throw new IllegalStateException("ADMIN_TOKEN must be set");
+            }
         }
         if (token.length() < 16) {
             throw new IllegalStateException("ADMIN_TOKEN must be at least 16 characters");

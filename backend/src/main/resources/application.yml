@@ -35,8 +35,10 @@ app:
   # 프론트엔드 CORS 허용 출처
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
   security:
-    # 관리자 API 보호용 토큰(필수)
+    # 관리자 API 보호용 토큰(운영에서는 반드시 환경변수로 고정값 설정)
     admin-token: ${ADMIN_TOKEN:}
+    # 개발 편의를 위해 ADMIN_TOKEN 미설정 시 임시 토큰 자동 생성 허용
+    allow-generated-admin-token: ${ALLOW_GENERATED_ADMIN_TOKEN:true}
   payment:
     kicc:
       # 가맹점/서명 관련 설정

@@ -146,6 +146,7 @@ public class AppProperties {
 
     public static class Security {
         private String adminToken;
+        private boolean allowGeneratedAdminToken;
 
         public String getAdminToken() {
             return adminToken;
@@ -153,6 +154,14 @@ public class AppProperties {
 
         public void setAdminToken(String adminToken) {
             this.adminToken = adminToken;
+        }
+
+        public boolean isAllowGeneratedAdminToken() {
+            return allowGeneratedAdminToken;
+        }
+
+        public void setAllowGeneratedAdminToken(boolean allowGeneratedAdminToken) {
+            this.allowGeneratedAdminToken = allowGeneratedAdminToken;
         }
     }
 }
