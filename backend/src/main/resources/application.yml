@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mariadb://localhost:3306/kicc_demo}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:als@2586}
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    time-zone: Asia/Seoul
+  docker:
+    compose:
+      enabled: true
+      file: compose.yaml
+      lifecycle-management: start_only
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  security:
+    admin-token: ${ADMIN_TOKEN:change-me-admin-token}
+  payment:
+    kicc:
+      merchant-id: ${KICC_MERCHANT_ID:TEST_MID}
+      merchant-key: ${KICC_MERCHANT_KEY:TEST_KEY}
+      pay-url: ${KICC_PAY_URL:https://pg.kicc.co.kr}
+      use-mock-approve: ${KICC_USE_MOCK_APPROVE:true}
+      callback-signature-required: ${KICC_CALLBACK_SIGNATURE_REQUIRED:false}

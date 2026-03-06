@@ -1,0 +1,12 @@
+{
+  "name": "kicc-demo",
+  "private": true,
+  "version": "0.0.1",
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "frontend:dev": "npm run dev -w frontend",
+    "frontend:build": "npm run build -w frontend"
+  }
+}

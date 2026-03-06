@@ -1,0 +1,15 @@
+services:
+  mariadb:
+    image: mariadb:11.7
+    container_name: kicc-demo-mariadb
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      MARIADB_ROOT_PASSWORD: "als@2586"
+      MARIADB_DATABASE: "kicc_demo"
+      TZ: "Asia/Seoul"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+volumes:
+  mariadb_data:
