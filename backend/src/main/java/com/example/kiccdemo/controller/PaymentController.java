@@ -23,6 +23,15 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 결제 준비/승인/취소/환불/콜백/조회 API를 외부에 노출하는 컨트롤러입니다.
+ *
+ * 이 컨트롤러의 책임:
+ * - HTTP 요청/응답 형태를 정의
+ * - 입력 검증(@Valid) 적용
+ * - 보안 검증(콜백 서명, mock 모드) 선행
+ * - 실제 비즈니스 처리는 PaymentService에 위임
+ */
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {
@@ -37,6 +46,7 @@ public class PaymentController {
         this.kiccWebhookVerifier = kiccWebhookVerifier;
     }
 
+    /** 결제 준비 API: 주문 정보를 받아 orderId와 PG 전송용 필드를 발급합니다. */
     @PostMapping("/ready")
     public ResponseEntity<PaymentReadyResponse> ready(
             @Valid @RequestBody PaymentReadyRequest request,
@@ -45,6 +55,7 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.ready(request, idempotencyKey));
     }
 
+    /** mock 승인 API: 실가맹점이 없는 개발 단계에서 승인 흐름을 재현합니다. */
     @PostMapping("/{orderId}/mock-approve")
     public ResponseEntity<PaymentResultResponse> mockApprove(@PathVariable String orderId) {
         validateMockMode();
@@ -52,6 +63,7 @@ public class PaymentController {
         return ResponseEntity.ok(PaymentResultResponse.from(payment));
     }
 
+    /** mock 전체취소 API */
     @PostMapping("/{orderId}/mock-cancel")
     public ResponseEntity<PaymentResultResponse> mockCancel(@PathVariable String orderId) {
         validateMockMode();
@@ -59,6 +71,7 @@ public class PaymentController {
         return ResponseEntity.ok(PaymentResultResponse.from(payment));
     }
 
+    /** mock 부분환불 API */
     @PostMapping("/{orderId}/mock-refund")
     public ResponseEntity<PaymentResultResponse> mockRefund(
             @PathVariable String orderId,
@@ -69,6 +82,12 @@ public class PaymentController {
         return ResponseEntity.ok(PaymentResultResponse.from(payment));
     }
 
+    /**
+     * KICC 콜백 수신 API.
+     *
+     * - X-KICC-SIGNATURE 헤더 검증 후 처리
+     * - 실제 상태 변경 로직은 PaymentService에서 안전하게 수행
+     */
     @PostMapping("/kicc/callback")
     public ResponseEntity<Map<String, String>> callback(
             @RequestParam("oid") String orderId,
@@ -82,12 +101,14 @@ public class PaymentController {
         return ResponseEntity.ok(Map.of("result", "OK"));
     }
 
+    /** 결제 단건 상태 조회 API */
     @GetMapping("/{orderId}")
     public ResponseEntity<PaymentResultResponse> get(@PathVariable String orderId) {
         Payment payment = paymentService.getPayment(orderId);
         return ResponseEntity.ok(PaymentResultResponse.from(payment));
     }
 
+    /** 결제 기준 환불 이력 조회 API */
     @GetMapping("/{orderId}/refund-history")
     public ResponseEntity<List<RefundHistoryResponse>> refundHistory(@PathVariable String orderId) {
         List<RefundHistoryResponse> response = paymentService.getRefundHistory(orderId)
@@ -97,6 +118,7 @@ public class PaymentController {
         return ResponseEntity.ok(response);
     }
 
+    /** mock 전용 API 호출 허용 여부를 점검합니다. */
     private void validateMockMode() {
         if (!appProperties.getPayment().getKicc().isUseMockApprove()) {
             throw new IllegalArgumentException("Mock approve mode is disabled");

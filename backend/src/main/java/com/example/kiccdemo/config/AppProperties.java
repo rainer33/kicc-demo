@@ -3,6 +3,9 @@ package com.example.kiccdemo.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app")
+/**
+ * application.yml 값을 타입 안전하게 바인딩하는 설정 객체입니다. 결제/보안 옵션을 한곳에서 관리합니다.
+ */
 public class AppProperties {
 
     private String frontendUrl;

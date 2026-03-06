@@ -5,6 +5,9 @@ import com.example.kiccdemo.entity.PaymentRefund;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 환불 이력 조회 응답 DTO입니다. 환불 거래 단위 데이터를 응답 형식으로 변환합니다.
+ */
 public class RefundHistoryResponse {
 
     private BigDecimal amount;

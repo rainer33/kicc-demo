@@ -4,6 +4,9 @@ import com.example.kiccdemo.entity.AuditLog;
 
 import java.time.LocalDateTime;
 
+/**
+ * 감사 로그 조회 응답 DTO입니다. 내부 로그 엔티티를 외부 응답 형식으로 변환합니다.
+ */
 public class AuditLogResponse {
 
     private String action;

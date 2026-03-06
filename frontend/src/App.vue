@@ -126,33 +126,44 @@
 import axios from 'axios'
 import { computed, reactive, ref } from 'vue'
 
+// 백엔드 API 기본 클라이언트
 const api = axios.create({
   baseURL: 'http://localhost:8080/api'
 })
 
+// 결제 준비 요청 폼 상태
 const form = reactive({
   orderName: '테스트 상품',
   buyerName: '홍길동',
   amount: 1000
 })
 
+// 멱등키: 같은 요청 중복 전송 시 동일 주문을 재사용하기 위한 선택 입력
 const idempotencyKey = ref('')
+// ready API 응답 데이터(주문번호, PG 폼 필드)
 const readyData = ref(null)
+// 현재 결제 상태 데이터
 const payment = ref(null)
+// 환불 이력 목록
 const refundHistory = ref([])
+// 환불 요청 입력 상태
 const refundAmount = ref(100)
 const refundReason = ref('고객 요청')
+// 공통 로딩/에러 상태
 const loading = ref(false)
 const error = ref('')
 
+// 관리자 기능 상태
 const adminToken = ref('')
 const adminPayments = ref([])
 const adminOrders = ref([])
 const auditLogs = ref([])
 
+// 버튼 활성화 조건 계산
 const canCancel = computed(() => payment.value?.status === 'APPROVED')
 const canRefund = computed(() => ['APPROVED', 'PARTIALLY_REFUNDED'].includes(payment.value?.status))
 
+// 결제 준비 요청: 필요 시 Idempotency-Key 헤더를 함께 전송
 const requestPayment = async () => {
   error.value = ''
   payment.value = null
@@ -172,6 +183,7 @@ const requestPayment = async () => {
   }
 }
 
+// mock 승인 처리
 const mockApprove = async () => {
   if (!readyData.value) return
   await runAction(async () => {
@@ -180,6 +192,7 @@ const mockApprove = async () => {
   }, 'Mock 승인 실패')
 }
 
+// mock 전체취소 처리
 const mockCancel = async () => {
   if (!readyData.value) return
   await runAction(async () => {
@@ -188,6 +201,7 @@ const mockCancel = async () => {
   }, '전체취소 실패')
 }
 
+// mock 부분환불 처리 후 환불이력 갱신
 const mockRefund = async () => {
   if (!readyData.value) return
   await runAction(async () => {
@@ -200,6 +214,7 @@ const mockRefund = async () => {
   }, '부분환불 실패')
 }
 
+// 결제 상태 새로고침
 const refreshPayment = async () => {
   if (!readyData.value) return
   await runAction(async () => {
@@ -208,6 +223,7 @@ const refreshPayment = async () => {
   }, '상태 조회 실패')
 }
 
+// 환불이력 조회
 const loadRefundHistory = async () => {
   if (!readyData.value) return
   await runAction(async () => {
@@ -216,6 +232,7 @@ const loadRefundHistory = async () => {
   }, '환불이력 조회 실패')
 }
 
+// 관리자 결제 목록 조회
 const loadAdminPayments = async () => {
   await runAction(async () => {
     const { data } = await api.get('/admin/payments', { headers: { 'X-Admin-Token': adminToken.value } })
@@ -223,6 +240,7 @@ const loadAdminPayments = async () => {
   }, '관리자 결제 목록 조회 실패')
 }
 
+// 관리자 주문 목록 조회
 const loadAdminOrders = async () => {
   await runAction(async () => {
     const { data } = await api.get('/admin/orders', { headers: { 'X-Admin-Token': adminToken.value } })
@@ -230,6 +248,7 @@ const loadAdminOrders = async () => {
   }, '관리자 주문 목록 조회 실패')
 }
 
+// 관리자 감사로그 조회
 const loadAuditLogs = async () => {
   await runAction(async () => {
     const { data } = await api.get('/admin/audit-logs', { headers: { 'X-Admin-Token': adminToken.value } })
@@ -237,6 +256,7 @@ const loadAuditLogs = async () => {
   }, '감사 로그 조회 실패')
 }
 
+// 수동 보정 실행 후 감사로그 새로고침
 const reconcileNow = async () => {
   await runAction(async () => {
     await api.post('/admin/reconcile-now', {}, { headers: { 'X-Admin-Token': adminToken.value } })
@@ -244,6 +264,7 @@ const reconcileNow = async () => {
   }, '보정 실행 실패')
 }
 
+// 모든 API 액션의 공통 에러/로딩 래퍼
 const runAction = async (fn, defaultMessage) => {
   error.value = ''
   loading.value = true

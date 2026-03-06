@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "payment_refunds")
+/**
+ * 환불 거래 엔티티입니다. 한 결제에 대해 여러 환불 이력을 저장합니다.
+ */
 public class PaymentRefund {
 
     @Id

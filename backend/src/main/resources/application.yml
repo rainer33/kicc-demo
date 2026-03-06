@@ -1,4 +1,5 @@
 spring:
+  # JPA 기본 동작 설정
   jpa:
     hibernate:
       ddl-auto: update
@@ -10,6 +11,7 @@ spring:
     time-zone: Asia/Seoul
   docker:
     compose:
+      # bootRun 시 로컬 compose.yaml을 자동 기동해 DB 준비를 단순화합니다.
       enabled: true
       file: compose.yaml
       lifecycle-management: start_only
@@ -18,19 +20,25 @@ server:
   port: 8080
 
 management:
+  # 운영 관측을 위한 Actuator 노출 엔드포인트
   endpoints:
     web:
       exposure:
         include: health,info,metrics,prometheus
 
 app:
+  # 프론트엔드 CORS 허용 출처
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
   security:
+    # 관리자 API 보호용 토큰(필수)
     admin-token: ${ADMIN_TOKEN:}
   payment:
     kicc:
+      # 가맹점/서명 관련 설정
       merchant-id: ${KICC_MERCHANT_ID:TEST_MID}
       merchant-key: ${KICC_MERCHANT_KEY:TEST_KEY}
       pay-url: ${KICC_PAY_URL:https://pg.kicc.co.kr}
+      # 실가맹점이 없을 때 mock 결제 흐름을 허용합니다.
       use-mock-approve: ${KICC_USE_MOCK_APPROVE:true}
+      # 콜백 위변조 방지를 위해 기본값을 true로 유지합니다.
       callback-signature-required: ${KICC_CALLBACK_SIGNATURE_REQUIRED:true}

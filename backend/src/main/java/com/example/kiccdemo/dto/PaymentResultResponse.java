@@ -5,6 +5,9 @@ import com.example.kiccdemo.entity.Payment;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 결제 상태 조회/처리 결과 DTO입니다. 승인/취소/환불 상태를 종합해 반환합니다.
+ */
 public class PaymentResultResponse {
 
     private String orderId;

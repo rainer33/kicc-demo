@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+/**
+ * 감사 로그 기록/조회 서비스입니다. 핵심 이벤트를 중앙에서 남기고 검색합니다.
+ */
 public class AuditService {
 
     private final AuditLogRepository auditLogRepository;

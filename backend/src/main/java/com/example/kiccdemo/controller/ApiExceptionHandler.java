@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.Map;
 
 @RestControllerAdvice
+/**
+ * 애플리케이션 전역 예외를 HTTP 응답 코드와 메시지로 변환하는 핸들러입니다.
+ */
 public class ApiExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)

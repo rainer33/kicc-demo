@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "payments")
+/**
+ * 결제 트랜잭션 엔티티입니다. 승인/취소/실패/환불 누적 금액 등 핵심 상태를 보관합니다.
+ */
 public class Payment {
 
     @Id

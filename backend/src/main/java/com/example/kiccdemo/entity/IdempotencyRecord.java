@@ -6,6 +6,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "idempotency_records")
+/**
+ * 멱등키 처리 상태를 저장하는 엔티티입니다. 중복 결제 요청을 안전하게 제어합니다.
+ */
 public class IdempotencyRecord {
 
     @Id

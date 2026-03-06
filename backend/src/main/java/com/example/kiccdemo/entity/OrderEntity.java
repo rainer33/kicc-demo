@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "orders")
+/**
+ * 결제와 분리된 주문 도메인 엔티티입니다. 주문 상태 머신의 기준 데이터를 저장합니다.
+ */
 public class OrderEntity {
 
     @Id

@@ -2,6 +2,9 @@ package com.example.kiccdemo.dto;
 
 import java.util.Map;
 
+/**
+ * 결제 준비 완료 응답 DTO입니다. 주문번호, PG URL, 전송 폼 필드를 제공합니다.
+ */
 public class PaymentReadyResponse {
 
     private String orderId;

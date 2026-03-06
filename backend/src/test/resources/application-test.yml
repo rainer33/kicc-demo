@@ -1,8 +1,10 @@
 spring:
   docker:
     compose:
+      # 테스트에서는 외부 Docker 의존성을 제거하기 위해 compose를 비활성화합니다.
       enabled: false
   datasource:
+    # 테스트는 메모리 DB(H2) 사용
     url: jdbc:h2:mem:kicc;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
     driver-class-name: org.h2.Driver
     username: sa
@@ -13,6 +15,7 @@ spring:
 
 app:
   security:
+    # 테스트 전용 관리자 토큰
     admin-token: test-admin-token-1234
   payment:
     kicc:
@@ -20,4 +23,5 @@ app:
       merchant-key: TEST_KEY
       pay-url: https://pg.kicc.co.kr
       use-mock-approve: true
+      # 테스트는 보안 회귀 확인을 위해 서명 검증을 강제합니다.
       callback-signature-required: true

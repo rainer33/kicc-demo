@@ -6,6 +6,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "audit_logs")
+/**
+ * 주요 보안/결제 이벤트를 추적하기 위한 감사 로그 엔티티입니다.
+ */
 public class AuditLog {
 
     @Id

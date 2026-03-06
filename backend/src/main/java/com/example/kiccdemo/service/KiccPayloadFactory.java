@@ -13,6 +13,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Component
+/**
+ * KICC 전송용 폼 필드와 서명값을 생성하는 팩토리입니다.
+ */
 public class KiccPayloadFactory {
 
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");

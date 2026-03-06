@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
+/**
+ * 결제 준비 요청 DTO입니다. 주문명/구매자/금액 입력값 검증 규칙을 포함합니다.
+ */
 public class PaymentReadyRequest {
 
     @NotBlank

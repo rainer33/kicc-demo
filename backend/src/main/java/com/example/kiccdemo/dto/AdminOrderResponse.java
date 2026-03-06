@@ -5,6 +5,9 @@ import com.example.kiccdemo.entity.OrderEntity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 관리자 주문 조회 응답 DTO입니다. 주문 엔티티를 화면/API 출력 형태로 변환합니다.
+ */
 public class AdminOrderResponse {
 
     private String orderId;

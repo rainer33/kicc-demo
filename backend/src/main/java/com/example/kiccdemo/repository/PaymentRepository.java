@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * 결제 엔티티 조회/저장 리포지토리입니다. 상태/시간 기준 조회와 페이지 조회를 지원합니다.
+ */
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrderId(String orderId);
 
