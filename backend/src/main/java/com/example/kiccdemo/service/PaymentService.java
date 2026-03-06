@@ -16,11 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -39,6 +41,7 @@ public class PaymentService {
     private final OrderRepository orderRepository;
     private final IdempotencyRecordRepository idempotencyRecordRepository;
     private final IdempotencyService idempotencyService;
+    private final RedisDedupService redisDedupService;
     private final KiccPayloadFactory kiccPayloadFactory;
     private final AppProperties appProperties;
     private final AuditService auditService;
@@ -49,6 +52,7 @@ public class PaymentService {
             OrderRepository orderRepository,
             IdempotencyRecordRepository idempotencyRecordRepository,
             IdempotencyService idempotencyService,
+            RedisDedupService redisDedupService,
             KiccPayloadFactory kiccPayloadFactory,
             AppProperties appProperties,
             AuditService auditService
@@ -58,6 +62,7 @@ public class PaymentService {
         this.orderRepository = orderRepository;
         this.idempotencyRecordRepository = idempotencyRecordRepository;
         this.idempotencyService = idempotencyService;
+        this.redisDedupService = redisDedupService;
         this.kiccPayloadFactory = kiccPayloadFactory;
         this.appProperties = appProperties;
         this.auditService = auditService;
@@ -76,47 +81,73 @@ public class PaymentService {
     public PaymentReadyResponse ready(PaymentReadyRequest request, String idempotencyKey) {
         String requestHash = buildRequestHash(request);
         String normalizedIdemKey = normalizeIdemKey(idempotencyKey);
-        IdempotencyRecord reserved = null;
+        boolean redisLockAcquired = false;
+
         if (normalizedIdemKey != null) {
-            IdempotencyService.Reservation reservation = idempotencyService.reserve(normalizedIdemKey, requestHash);
-            reserved = reservation.record();
-            if (reservation.existing()) {
-                // 기존 처리 완료 요청이면 기존 orderId를 재사용해 같은 응답 성격을 유지합니다.
-                if (reserved.getOrderId() == null || reserved.getOrderId().isBlank()) {
-                    // 다른 요청이 아직 처리 중인 중간 상태입니다.
-                    throw new IllegalStateException("Idempotent request is in progress. Retry shortly.");
-                }
-                return buildReadyResponse(findByOrderId(reserved.getOrderId()));
+            // 1) Redis 결과 캐시가 있으면 DB 조회 후 즉시 반환
+            Optional<String> cachedOrderId = redisDedupService.getResultOrderId(normalizedIdemKey);
+            if (cachedOrderId.isPresent()) {
+                return buildReadyResponse(findByOrderId(cachedOrderId.get()));
+            }
+            // 2) Redis NX lock으로 동일 키 동시 요청 선점
+            redisLockAcquired = redisDedupService.tryAcquireLock(normalizedIdemKey, Duration.ofSeconds(30));
+            if (!redisLockAcquired) {
+                throw new IllegalStateException("Idempotent request is in progress. Retry shortly.");
             }
         }
 
-        String orderId = generateOrderId();
-        OrderEntity order = new OrderEntity();
-        order.setOrderId(orderId);
-        order.setOrderName(request.getOrderName());
-        order.setBuyerName(request.getBuyerName());
-        order.setAmount(request.getAmount());
-        order.setStatus(OrderStatus.PAYMENT_PENDING);
-        orderRepository.save(order);
+        IdempotencyRecord reserved = null;
+        try {
+            if (normalizedIdemKey != null) {
+                IdempotencyService.Reservation reservation = idempotencyService.reserve(normalizedIdemKey, requestHash);
+                reserved = reservation.record();
+                if (reservation.existing()) {
+                    // 기존 처리 완료 요청이면 기존 orderId를 재사용해 같은 응답 성격을 유지합니다.
+                    if (reserved.getOrderId() == null
+                            || reserved.getOrderId().isBlank()
+                            || "__PENDING__".equals(reserved.getOrderId())) {
+                        // 다른 요청이 아직 처리 중인 중간 상태입니다.
+                        throw new IllegalStateException("Idempotent request is in progress. Retry shortly.");
+                    }
+                    return buildReadyResponse(findByOrderId(reserved.getOrderId()));
+                }
+            }
 
-        Payment payment = new Payment();
-        payment.setOrderId(orderId);
-        payment.setOrderName(request.getOrderName());
-        payment.setBuyerName(request.getBuyerName());
-        payment.setAmount(request.getAmount());
-        payment.setStatus(PaymentStatus.READY);
+            String orderId = generateOrderId();
+            OrderEntity order = new OrderEntity();
+            order.setOrderId(orderId);
+            order.setOrderName(request.getOrderName());
+            order.setBuyerName(request.getBuyerName());
+            order.setAmount(request.getAmount());
+            order.setStatus(OrderStatus.PAYMENT_PENDING);
+            orderRepository.save(order);
 
-        Payment saved = paymentRepository.save(payment);
+            Payment payment = new Payment();
+            payment.setOrderId(orderId);
+            payment.setOrderName(request.getOrderName());
+            payment.setBuyerName(request.getBuyerName());
+            payment.setAmount(request.getAmount());
+            payment.setStatus(PaymentStatus.READY);
 
-        if (reserved != null) {
-            // 별도 트랜잭션에서 예약한 멱등 레코드에 최종 orderId를 연결합니다.
-            reserved.setOrderId(saved.getOrderId());
-            idempotencyRecordRepository.save(reserved);
+            Payment saved = paymentRepository.save(payment);
+
+            if (reserved != null) {
+                // 별도 트랜잭션에서 예약한 멱등 레코드에 최종 orderId를 연결합니다.
+                reserved.setOrderId(saved.getOrderId());
+                idempotencyRecordRepository.save(reserved);
+            }
+
+            auditService.log("PAYMENT_READY", saved.getOrderId(), "Payment and order created");
+            if (normalizedIdemKey != null) {
+                // 결과 캐시에 orderId를 저장해 재요청 시 빠르게 응답합니다.
+                redisDedupService.saveResult(normalizedIdemKey, saved.getOrderId(), Duration.ofHours(24));
+            }
+            return buildReadyResponse(saved);
+        } finally {
+            if (normalizedIdemKey != null && redisLockAcquired) {
+                redisDedupService.releaseLock(normalizedIdemKey);
+            }
         }
-
-        auditService.log("PAYMENT_READY", saved.getOrderId(), "Payment and order created");
-
-        return buildReadyResponse(saved);
     }
 
     /** READY 상태 결제를 mock 승인 처리합니다. */

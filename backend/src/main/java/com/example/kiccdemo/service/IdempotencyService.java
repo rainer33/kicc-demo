@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class IdempotencyService {
 
+    private static final String PENDING_ORDER_ID = "__PENDING__";
     private final IdempotencyRecordRepository idempotencyRecordRepository;
 
     public IdempotencyService(IdempotencyRecordRepository idempotencyRecordRepository) {
@@ -42,6 +43,8 @@ public class IdempotencyService {
         try {
             IdempotencyRecord created = new IdempotencyRecord();
             created.setIdemKey(idemKey);
+            // DB 스키마가 NOT NULL일 수 있어 임시 상태값을 먼저 저장합니다.
+            created.setOrderId(PENDING_ORDER_ID);
             created.setRequestHash(requestHash);
             IdempotencyRecord saved = idempotencyRecordRepository.saveAndFlush(created);
             return new Reservation(saved, false);
