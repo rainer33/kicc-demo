@@ -1,0 +1,2 @@
+user default on >redis2586! ~* +@all
+user redis on >redis2586! ~* +@all
