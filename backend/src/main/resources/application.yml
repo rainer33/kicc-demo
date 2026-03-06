@@ -27,6 +27,11 @@ management:
         include: health,info,metrics,prometheus
 
 app:
+  redis:
+    host: ${REDIS_HOST:127.0.0.1}
+    port: ${REDIS_PORT:6379}
+    username: ${REDIS_USERNAME:redis}
+    password: ${REDIS_PASSWORD:redis2586!}
   # 프론트엔드 CORS 허용 출처
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
   security:
