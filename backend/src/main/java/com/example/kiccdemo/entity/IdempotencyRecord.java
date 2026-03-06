@@ -15,7 +15,7 @@ public class IdempotencyRecord {
     @Column(nullable = false, unique = true, length = 120)
     private String idemKey;
 
-    @Column(nullable = false, length = 64)
+    @Column(length = 64)
     private String orderId;
 
     @Column(nullable = false, length = 64)

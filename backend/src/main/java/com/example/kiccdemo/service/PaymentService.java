@@ -8,6 +8,8 @@ import com.example.kiccdemo.repository.IdempotencyRecordRepository;
 import com.example.kiccdemo.repository.OrderRepository;
 import com.example.kiccdemo.repository.PaymentRefundRepository;
 import com.example.kiccdemo.repository.PaymentRepository;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -27,6 +30,7 @@ public class PaymentService {
     private final PaymentRefundRepository paymentRefundRepository;
     private final OrderRepository orderRepository;
     private final IdempotencyRecordRepository idempotencyRecordRepository;
+    private final IdempotencyService idempotencyService;
     private final KiccPayloadFactory kiccPayloadFactory;
     private final AppProperties appProperties;
     private final AuditService auditService;
@@ -36,6 +40,7 @@ public class PaymentService {
             PaymentRefundRepository paymentRefundRepository,
             OrderRepository orderRepository,
             IdempotencyRecordRepository idempotencyRecordRepository,
+            IdempotencyService idempotencyService,
             KiccPayloadFactory kiccPayloadFactory,
             AppProperties appProperties,
             AuditService auditService
@@ -44,6 +49,7 @@ public class PaymentService {
         this.paymentRefundRepository = paymentRefundRepository;
         this.orderRepository = orderRepository;
         this.idempotencyRecordRepository = idempotencyRecordRepository;
+        this.idempotencyService = idempotencyService;
         this.kiccPayloadFactory = kiccPayloadFactory;
         this.appProperties = appProperties;
         this.auditService = auditService;
@@ -52,20 +58,16 @@ public class PaymentService {
     @Transactional
     public PaymentReadyResponse ready(PaymentReadyRequest request, String idempotencyKey) {
         String requestHash = buildRequestHash(request);
-        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
-            IdempotencyRecord record = idempotencyRecordRepository.findByIdemKey(idempotencyKey).orElse(null);
-            if (record != null) {
-                if (!record.getRequestHash().equals(requestHash)) {
-                    throw new IllegalArgumentException("Idempotency key already used with different request");
+        String normalizedIdemKey = normalizeIdemKey(idempotencyKey);
+        IdempotencyRecord reserved = null;
+        if (normalizedIdemKey != null) {
+            IdempotencyService.Reservation reservation = idempotencyService.reserve(normalizedIdemKey, requestHash);
+            reserved = reservation.record();
+            if (reservation.existing()) {
+                if (reserved.getOrderId() == null || reserved.getOrderId().isBlank()) {
+                    throw new IllegalStateException("Idempotent request is in progress. Retry shortly.");
                 }
-                Payment existing = findByOrderId(record.getOrderId());
-                Map<String, String> fields = kiccPayloadFactory.createFormFields(existing);
-                return new PaymentReadyResponse(
-                        existing.getOrderId(),
-                        appProperties.getPayment().getKicc().getPayUrl(),
-                        appProperties.getPayment().getKicc().isUseMockApprove(),
-                        fields
-                );
+                return buildReadyResponse(findByOrderId(reserved.getOrderId()));
             }
         }
 
@@ -87,23 +89,14 @@ public class PaymentService {
 
         Payment saved = paymentRepository.save(payment);
 
-        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
-            IdempotencyRecord record = new IdempotencyRecord();
-            record.setIdemKey(idempotencyKey);
-            record.setOrderId(saved.getOrderId());
-            record.setRequestHash(requestHash);
-            idempotencyRecordRepository.save(record);
+        if (reserved != null) {
+            reserved.setOrderId(saved.getOrderId());
+            idempotencyRecordRepository.save(reserved);
         }
 
         auditService.log("PAYMENT_READY", saved.getOrderId(), "Payment and order created");
 
-        Map<String, String> fields = kiccPayloadFactory.createFormFields(saved);
-        return new PaymentReadyResponse(
-                saved.getOrderId(),
-                appProperties.getPayment().getKicc().getPayUrl(),
-                appProperties.getPayment().getKicc().isUseMockApprove(),
-                fields
-        );
+        return buildReadyResponse(saved);
     }
 
     @Transactional
@@ -158,6 +151,31 @@ public class PaymentService {
     @Transactional
     public Payment handleKiccCallback(String orderId, String resultCode, String resultMsg, String tXid) {
         Payment payment = findByOrderId(orderId);
+        if (payment.getStatus() == PaymentStatus.CANCELED
+                || payment.getStatus() == PaymentStatus.PARTIALLY_REFUNDED
+                || payment.getStatus() == PaymentStatus.REFUNDED) {
+            auditService.log("KICC_CALLBACK_IGNORED", orderId, "Ignored callback for finalized state=" + payment.getStatus());
+            return payment;
+        }
+
+        if (payment.getStatus() == PaymentStatus.APPROVED) {
+            if ("0000".equals(resultCode)) {
+                if (tXid != null && !tXid.isBlank() && payment.getPgTransactionId() != null
+                        && !Objects.equals(payment.getPgTransactionId(), tXid)) {
+                    throw new SecurityException("Callback txid mismatch");
+                }
+                auditService.log("KICC_CALLBACK_DUPLICATE", orderId, "Duplicate approved callback ignored");
+                return payment;
+            }
+            auditService.log("KICC_CALLBACK_IGNORED", orderId, "Failure callback ignored for APPROVED state");
+            return payment;
+        }
+
+        if (payment.getStatus() != PaymentStatus.READY) {
+            auditService.log("KICC_CALLBACK_IGNORED", orderId, "Ignored callback for state=" + payment.getStatus());
+            return payment;
+        }
+
         if ("0000".equals(resultCode)) {
             payment.markApproved(tXid == null || tXid.isBlank() ? "UNKNOWN-TXID" : tXid);
             auditService.log("KICC_APPROVED", orderId, "Callback approved");
@@ -182,17 +200,19 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public List<Payment> adminPayments(PaymentStatus status) {
+        PageRequest pageRequest = PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "updatedAt"));
         if (status == null) {
-            return paymentRepository.findTop100ByOrderByUpdatedAtDesc();
+            return paymentRepository.findAllByOrderByUpdatedAtDesc(pageRequest).getContent();
         }
-        return paymentRepository.findByStatusOrderByUpdatedAtDesc(status);
+        return paymentRepository.findByStatusOrderByUpdatedAtDesc(status, pageRequest).getContent();
     }
 
     @Transactional(readOnly = true)
     public List<OrderEntity> adminOrders(LocalDateTime from, LocalDateTime to) {
         LocalDateTime fromTime = from == null ? LocalDateTime.now().minusDays(7) : from;
         LocalDateTime toTime = to == null ? LocalDateTime.now().plusSeconds(1) : to;
-        return orderRepository.findByUpdatedAtBetweenOrderByUpdatedAtDesc(fromTime, toTime);
+        PageRequest pageRequest = PageRequest.of(0, 100, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        return orderRepository.findByUpdatedAtBetweenOrderByUpdatedAtDesc(fromTime, toTime, pageRequest).getContent();
     }
 
     private void syncOrderStatus(Payment payment) {
@@ -226,5 +246,22 @@ public class PaymentService {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to build request hash", e);
         }
+    }
+
+    private String normalizeIdemKey(String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        return key.trim();
+    }
+
+    private PaymentReadyResponse buildReadyResponse(Payment payment) {
+        Map<String, String> fields = kiccPayloadFactory.createFormFields(payment);
+        return new PaymentReadyResponse(
+                payment.getOrderId(),
+                appProperties.getPayment().getKicc().getPayUrl(),
+                appProperties.getPayment().getKicc().isUseMockApprove(),
+                fields
+        );
     }
 }
