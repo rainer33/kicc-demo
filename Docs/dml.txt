@@ -1,0 +1,78 @@
+-- MariaDB DML sample data for kicc_demo
+USE `kicc_demo`;
+
+-- Orders
+INSERT INTO `orders` (`order_id`, `order_name`, `buyer_name`, `amount`, `status`, `created_at`, `updated_at`) VALUES
+('ORDER-20260313-0001', '아메리카노 2잔', '홍길동', 9000.00, 'PAID', '2026-03-13 21:50:00.000000', '2026-03-13 21:52:30.000000'),
+('ORDER-20260313-0002', '샌드위치 세트', '김테스터', 12000.00, 'PARTIALLY_REFUNDED', '2026-03-13 21:55:00.000000', '2026-03-13 21:58:30.000000'),
+('ORDER-20260313-0003', '키오스크 주문', '무인고객', 7000.00, 'CANCELED', '2026-03-13 22:00:00.000000', '2026-03-13 22:03:10.000000');
+
+-- Payments
+INSERT INTO `payments` (
+  `order_id`, `amount`, `order_name`, `buyer_name`, `status`,
+  `pg_transaction_id`, `fail_reason`, `refunded_amount`,
+  `created_at`, `updated_at`, `approved_at`, `canceled_at`
+) VALUES
+('ORDER-20260313-0001', 9000.00, '아메리카노 2잔', '홍길동', 'APPROVED', 'MOCK-TX-0001', NULL, 0.00,
+ '2026-03-13 21:50:01.000000', '2026-03-13 21:52:30.000000', '2026-03-13 21:50:30.000000', NULL),
+('ORDER-20260313-0002', 12000.00, '샌드위치 세트', '김테스터', 'PARTIALLY_REFUNDED', 'MOCK-TX-0002', NULL, 3000.00,
+ '2026-03-13 21:55:01.000000', '2026-03-13 21:58:30.000000', '2026-03-13 21:55:40.000000', NULL),
+('ORDER-20260313-0003', 7000.00, '키오스크 주문', '무인고객', 'CANCELED', 'MOCK-TX-0003', NULL, 7000.00,
+ '2026-03-13 22:00:01.000000', '2026-03-13 22:03:10.000000', '2026-03-13 22:00:20.000000', '2026-03-13 22:03:10.000000');
+
+-- Payment refunds (payment_id references payments.id)
+INSERT INTO `payment_refunds` (`payment_id`, `amount`, `refund_transaction_id`, `reason`, `created_at`)
+SELECT p.id, 3000.00, 'MOCK-RFD-0001', '부분 환불 테스트', '2026-03-13 21:58:20.000000'
+FROM `payments` p
+WHERE p.order_id = 'ORDER-20260313-0002';
+
+-- Idempotency records
+INSERT INTO `idempotency_records` (`idem_key`, `order_id`, `request_hash`, `created_at`) VALUES
+('idem-20260313-0001', 'ORDER-20260313-0001', 'f3ad9b8b4c38e252d36fcbf9f4a6a6f90d30d5f6140f021d086ef6b4d32b0a11', '2026-03-13 21:50:00.100000'),
+('idem-20260313-0002', 'ORDER-20260313-0002', '7a191cf3d3d9c03e4ab0ad00ff4bb1ee495bd7fce8dbdf74ebf5da4b0fef6211', '2026-03-13 21:55:00.120000');
+
+-- Audit logs
+INSERT INTO `audit_logs` (`action`, `target_id`, `detail`, `created_at`) VALUES
+('PAYMENT_READY', 'ORDER-20260313-0001', 'Payment and order created', '2026-03-13 21:50:01.000000'),
+('MOCK_APPROVE', 'ORDER-20260313-0001', 'Payment approved', '2026-03-13 21:50:30.000000'),
+('MOCK_REFUND', 'ORDER-20260313-0002', 'Refunded amount=3000.00', '2026-03-13 21:58:20.000000'),
+('MOCK_CANCEL', 'ORDER-20260313-0003', 'Payment canceled', '2026-03-13 22:03:10.000000');
+
+-- Kiosk sessions
+INSERT INTO `kiosk_sessions` (
+  `session_id`, `kiosk_id`, `order_name`, `amount`, `status`,
+  `payment_method`, `order_id`, `terminal_transaction_id`, `last_message`,
+  `created_at`, `updated_at`
+) VALUES
+('KSESSION-20260313-0001', 'KIOSK-01', '키오스크 주문', 7000.00, 'CANCELED', 'CARD', 'ORDER-20260313-0003', 'TERM-TX-0001', '단말 취소 완료',
+ '2026-03-13 21:59:40.000000', '2026-03-13 22:03:10.000000'),
+('KSESSION-20260313-0002', 'KIOSK-02', '아이스라떼', 5500.00, 'APPROVED', 'EASY_PAY', 'ORDER-20260313-0001', 'TERM-TX-0002', '결제 승인 완료',
+ '2026-03-13 21:49:40.000000', '2026-03-13 21:50:35.000000');
+
+-- Test histories
+INSERT INTO `test_histories` (
+  `run_id`, `scenario_name`, `category`, `status`, `environment`,
+  `api_endpoint`, `http_method`, `idempotency_key`, `concurrency_level`, `network_condition`,
+  `expected_result`, `actual_result`, `request_payload`, `response_payload`, `notes`,
+  `executed_by`, `started_at`, `finished_at`, `duration_ms`, `created_at`, `updated_at`
+) VALUES
+(
+  'RUN-20260313-001', '결제 ready 기본 흐름', 'PAYMENT_FLOW', 'PASS', 'local-dev',
+  '/api/payments/ready', 'POST', NULL, 1, 'normal',
+  'orderId 생성 및 READY 상태 생성', 'orderId 생성 후 mock 승인까지 완료',
+  '{"orderName":"아메리카노 2잔","buyerName":"홍길동","amount":9000}',
+  '{"orderId":"ORDER-20260313-0001","mockMode":true}',
+  '기본 플로우 정상',
+  'tester', '2026-03-13 21:49:58.000000', '2026-03-13 21:50:31.000000', 33000,
+  '2026-03-13 21:50:31.000000', '2026-03-13 21:50:31.000000'
+),
+(
+  'RUN-20260313-002', '멱등키 중복 요청', 'IDEMPOTENCY', 'PASS', 'local-dev',
+  '/api/payments/ready', 'POST', 'idem-20260313-0002', 5, 'normal',
+  '동일 키 재요청 시 동일 orderId 반환', '동일 orderId 재사용 확인',
+  '{"orderName":"샌드위치 세트","buyerName":"김테스터","amount":12000}',
+  '{"orderId":"ORDER-20260313-0002"}',
+  'Redis lock + DB 멱등 처리 확인',
+  'tester', '2026-03-13 21:54:58.000000', '2026-03-13 21:55:03.000000', 5000,
+  '2026-03-13 21:55:03.000000', '2026-03-13 21:55:03.000000'
+);

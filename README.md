@@ -1,13 +1,30 @@
 # KICC 결제 데모 (Spring Boot + Gradle + Vue + MariaDB)
 
+## 실행 명령어
+프로젝트 루트에서 실행:
+```bash
+./bootrun
+```
+
+프론트엔드(dev) 실행:
+```bash
+./run
+```
+
+백엔드만 직접 실행:
+```bash
+cd backend
+./gradlew bootRun
+```
+
 ## 빠른 실행
 루트에서:
 ```bash
-bootrun
+./bootrun
 ```
 새 터미널에서:
 ```bash
-run
+./run
 ```
 
 - `bootrun`은 backend의 `./gradlew bootRun` 실행
@@ -70,6 +87,8 @@ run
 - `REDIS_PORT`
 - `REDIS_USERNAME`
 - `REDIS_PASSWORD`
+
+루트 경로의 `.env.local` 파일에 위 값을 넣어두면 `bootrun` 실행 시 자동으로 로드됩니다.
 
 ## 실연동 시 교체 포인트
 - `KiccPayloadFactory`: KICC 실제 필드/서명 규격 반영

@@ -13,3 +13,6 @@ dist/
 .vscode/
 *.iml
 .DS_Store
+
+# Local environment overrides
+.env.local
