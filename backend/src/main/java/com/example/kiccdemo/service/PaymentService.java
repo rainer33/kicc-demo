@@ -4,6 +4,7 @@ import com.example.kiccdemo.config.AppProperties;
 import com.example.kiccdemo.dto.PaymentReadyRequest;
 import com.example.kiccdemo.dto.PaymentReadyResponse;
 import com.example.kiccdemo.entity.*;
+import com.example.kiccdemo.exception.ResourceNotFoundException;
 import com.example.kiccdemo.repository.IdempotencyRecordRepository;
 import com.example.kiccdemo.repository.OrderRepository;
 import com.example.kiccdemo.repository.PaymentRefundRepository;
@@ -290,7 +291,7 @@ public class PaymentService {
     /** 결제 상태를 기준으로 주문 상태를 일관되게 동기화합니다. */
     private void syncOrderStatus(Payment payment) {
         OrderEntity order = orderRepository.findByOrderId(payment.getOrderId())
-                .orElseThrow(() -> new IllegalArgumentException("Order not found for orderId=" + payment.getOrderId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found for orderId=" + payment.getOrderId()));
 
         switch (payment.getStatus()) {
             case READY -> order.setStatus(OrderStatus.PAYMENT_PENDING);
@@ -305,7 +306,7 @@ public class PaymentService {
     /** orderId로 결제를 조회하고 없으면 명시적으로 예외를 발생시킵니다. */
     private Payment findByOrderId(String orderId) {
         return paymentRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Payment not found for orderId=" + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found for orderId=" + orderId));
     }
 
     /** 외부 노출 가능한 주문번호를 생성합니다. */

@@ -28,7 +28,7 @@ public class AdminAuthService {
             if (appProperties.getSecurity().isAllowGeneratedAdminToken()) {
                 token = "dev-" + UUID.randomUUID().toString().replace("-", "");
                 appProperties.getSecurity().setAdminToken(token);
-                log.warn("ADMIN_TOKEN was not set. Generated temporary admin token for this run: {}", token);
+                log.warn("ADMIN_TOKEN was not set. Generated temporary admin token for this run.");
             } else {
                 throw new IllegalStateException("ADMIN_TOKEN must be set");
             }

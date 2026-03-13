@@ -10,8 +10,10 @@ public class AppProperties {
 
     private Redis redis = new Redis();
     private String frontendUrl;
+    private String backendUrl;
     private Payment payment = new Payment();
     private Security security = new Security();
+    private TestHistory testHistory = new TestHistory();
 
     public Redis getRedis() {
         return redis;
@@ -29,6 +31,14 @@ public class AppProperties {
         this.frontendUrl = frontendUrl;
     }
 
+    public String getBackendUrl() {
+        return backendUrl;
+    }
+
+    public void setBackendUrl(String backendUrl) {
+        this.backendUrl = backendUrl;
+    }
+
     public Payment getPayment() {
         return payment;
     }
@@ -43,6 +53,14 @@ public class AppProperties {
 
     public void setSecurity(Security security) {
         this.security = security;
+    }
+
+    public TestHistory getTestHistory() {
+        return testHistory;
+    }
+
+    public void setTestHistory(TestHistory testHistory) {
+        this.testHistory = testHistory;
     }
 
     public static class Payment {
@@ -162,6 +180,18 @@ public class AppProperties {
 
         public void setAllowGeneratedAdminToken(boolean allowGeneratedAdminToken) {
             this.allowGeneratedAdminToken = allowGeneratedAdminToken;
+        }
+    }
+
+    public static class TestHistory {
+        private boolean seedEnabled;
+
+        public boolean isSeedEnabled() {
+            return seedEnabled;
+        }
+
+        public void setSeedEnabled(boolean seedEnabled) {
+            this.seedEnabled = seedEnabled;
         }
     }
 }

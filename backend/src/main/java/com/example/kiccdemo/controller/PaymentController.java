@@ -7,6 +7,7 @@ import com.example.kiccdemo.dto.PaymentReadyResponse;
 import com.example.kiccdemo.dto.PaymentResultResponse;
 import com.example.kiccdemo.dto.RefundHistoryResponse;
 import com.example.kiccdemo.entity.Payment;
+import com.example.kiccdemo.service.AdminAuthService;
 import com.example.kiccdemo.service.KiccWebhookVerifier;
 import com.example.kiccdemo.service.PaymentService;
 import jakarta.validation.Valid;
@@ -39,11 +40,18 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final AppProperties appProperties;
     private final KiccWebhookVerifier kiccWebhookVerifier;
+    private final AdminAuthService adminAuthService;
 
-    public PaymentController(PaymentService paymentService, AppProperties appProperties, KiccWebhookVerifier kiccWebhookVerifier) {
+    public PaymentController(
+            PaymentService paymentService,
+            AppProperties appProperties,
+            KiccWebhookVerifier kiccWebhookVerifier,
+            AdminAuthService adminAuthService
+    ) {
         this.paymentService = paymentService;
         this.appProperties = appProperties;
         this.kiccWebhookVerifier = kiccWebhookVerifier;
+        this.adminAuthService = adminAuthService;
     }
 
     /** 결제 준비 API: 주문 정보를 받아 orderId와 PG 전송용 필드를 발급합니다. */
@@ -57,7 +65,11 @@ public class PaymentController {
 
     /** mock 승인 API: 실가맹점이 없는 개발 단계에서 승인 흐름을 재현합니다. */
     @PostMapping("/{orderId}/mock-approve")
-    public ResponseEntity<PaymentResultResponse> mockApprove(@PathVariable String orderId) {
+    public ResponseEntity<PaymentResultResponse> mockApprove(
+            @PathVariable String orderId,
+            @RequestHeader("X-Admin-Token") String adminToken
+    ) {
+        adminAuthService.validateToken(adminToken);
         validateMockMode();
         Payment payment = paymentService.mockApprove(orderId);
         return ResponseEntity.ok(PaymentResultResponse.from(payment));
@@ -65,7 +77,11 @@ public class PaymentController {
 
     /** mock 전체취소 API */
     @PostMapping("/{orderId}/mock-cancel")
-    public ResponseEntity<PaymentResultResponse> mockCancel(@PathVariable String orderId) {
+    public ResponseEntity<PaymentResultResponse> mockCancel(
+            @PathVariable String orderId,
+            @RequestHeader("X-Admin-Token") String adminToken
+    ) {
+        adminAuthService.validateToken(adminToken);
         validateMockMode();
         Payment payment = paymentService.mockCancel(orderId);
         return ResponseEntity.ok(PaymentResultResponse.from(payment));
@@ -75,8 +91,10 @@ public class PaymentController {
     @PostMapping("/{orderId}/mock-refund")
     public ResponseEntity<PaymentResultResponse> mockRefund(
             @PathVariable String orderId,
+            @RequestHeader("X-Admin-Token") String adminToken,
             @Valid @RequestBody PaymentRefundRequest request
     ) {
+        adminAuthService.validateToken(adminToken);
         validateMockMode();
         Payment payment = paymentService.mockRefund(orderId, request.getAmount(), request.getReason());
         return ResponseEntity.ok(PaymentResultResponse.from(payment));

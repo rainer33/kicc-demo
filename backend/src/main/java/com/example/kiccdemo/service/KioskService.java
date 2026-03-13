@@ -10,6 +10,7 @@ import com.example.kiccdemo.dto.PaymentReadyResponse;
 import com.example.kiccdemo.entity.KioskPaymentMethod;
 import com.example.kiccdemo.entity.KioskSession;
 import com.example.kiccdemo.entity.KioskSessionStatus;
+import com.example.kiccdemo.exception.ResourceNotFoundException;
 import com.example.kiccdemo.repository.KioskSessionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -172,7 +173,7 @@ public class KioskService {
 
     private KioskSession findBySessionId(String sessionId) {
         return kioskSessionRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new IllegalArgumentException("Kiosk session not found: " + sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Kiosk session not found: " + sessionId));
     }
 
     private void validateMockMode() {

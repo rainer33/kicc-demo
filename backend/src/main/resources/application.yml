@@ -34,18 +34,23 @@ app:
     password: ${REDIS_PASSWORD:redis2586!}
   # 프론트엔드 CORS 허용 출처
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  # 외부 PG 콜백이 도달할 백엔드 기준 URL
+  backend-url: ${BACKEND_URL:http://localhost:8080}
   security:
     # 관리자 API 보호용 토큰(운영에서는 반드시 환경변수로 고정값 설정)
     admin-token: ${ADMIN_TOKEN:}
-    # 개발 편의를 위해 ADMIN_TOKEN 미설정 시 임시 토큰 자동 생성 허용
-    allow-generated-admin-token: ${ALLOW_GENERATED_ADMIN_TOKEN:true}
+    # 운영 안전성을 위해 기본값은 false로 유지합니다.
+    allow-generated-admin-token: ${ALLOW_GENERATED_ADMIN_TOKEN:false}
   payment:
     kicc:
       # 가맹점/서명 관련 설정
       merchant-id: ${KICC_MERCHANT_ID:TEST_MID}
       merchant-key: ${KICC_MERCHANT_KEY:TEST_KEY}
       pay-url: ${KICC_PAY_URL:https://pg.kicc.co.kr}
-      # 실가맹점이 없을 때 mock 결제 흐름을 허용합니다.
-      use-mock-approve: ${KICC_USE_MOCK_APPROVE:true}
+      # mock 결제 흐름은 기본 비활성화(명시적 활성화 필요)
+      use-mock-approve: ${KICC_USE_MOCK_APPROVE:false}
       # 콜백 위변조 방지를 위해 기본값을 true로 유지합니다.
       callback-signature-required: ${KICC_CALLBACK_SIGNATURE_REQUIRED:true}
+  test-history:
+    # 운영 DB 오염 방지를 위해 기본 비활성화
+    seed-enabled: ${APP_TEST_HISTORY_SEED_ENABLED:false}

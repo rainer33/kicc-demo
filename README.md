@@ -56,7 +56,7 @@ cd backend
 - DB 이름: `kicc_demo`
 - Redis 사용자: `redis`
 - Redis 비밀번호: `redis2586!`
-- 관리자 토큰: `ADMIN_TOKEN` 미설정 시 개발용 토큰 자동 생성(운영은 16자 이상 고정값 권장)
+- 관리자 토큰: `ADMIN_TOKEN` 필수(운영은 16자 이상 고정값 권장)
 
 ## 구현된 기능 (실승인 없이 테스트 가능)
 - 결제 준비/승인/상태조회
@@ -73,9 +73,9 @@ cd backend
 ## 주요 API
 ### 결제 API
 - `POST /api/payments/ready`
-- `POST /api/payments/{orderId}/mock-approve`
-- `POST /api/payments/{orderId}/mock-cancel`
-- `POST /api/payments/{orderId}/mock-refund`
+- `POST /api/payments/{orderId}/mock-approve` (헤더 `X-Admin-Token` 필요)
+- `POST /api/payments/{orderId}/mock-cancel` (헤더 `X-Admin-Token` 필요)
+- `POST /api/payments/{orderId}/mock-refund` (헤더 `X-Admin-Token` 필요)
 - `GET /api/payments/{orderId}`
 - `GET /api/payments/{orderId}/refund-history`
 - `POST /api/payments/kicc/callback`
@@ -96,12 +96,15 @@ cd backend
 
 ## 환경변수
 - `ADMIN_TOKEN`
+- `ALLOW_GENERATED_ADMIN_TOKEN`
 - `KICC_MERCHANT_ID`
 - `KICC_MERCHANT_KEY`
 - `KICC_PAY_URL`
 - `KICC_USE_MOCK_APPROVE`
 - `KICC_CALLBACK_SIGNATURE_REQUIRED`
   - 기본값: `true`
+- `BACKEND_URL`
+- `APP_TEST_HISTORY_SEED_ENABLED`
 - `REDIS_HOST`
 - `REDIS_PORT`
 - `REDIS_USERNAME`

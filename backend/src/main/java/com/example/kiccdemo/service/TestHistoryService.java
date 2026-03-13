@@ -1,5 +1,6 @@
 package com.example.kiccdemo.service;
 
+import com.example.kiccdemo.config.AppProperties;
 import com.example.kiccdemo.dto.TestHistoryDetailResponse;
 import com.example.kiccdemo.dto.TestHistoryCreateRequest;
 import com.example.kiccdemo.dto.TestHistoryListItemResponse;
@@ -7,6 +8,7 @@ import com.example.kiccdemo.dto.TestHistoryPageResponse;
 import com.example.kiccdemo.entity.TestHistory;
 import com.example.kiccdemo.entity.TestHistoryCategory;
 import com.example.kiccdemo.entity.TestHistoryStatus;
+import com.example.kiccdemo.exception.ResourceNotFoundException;
 import com.example.kiccdemo.repository.TestHistoryRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.data.domain.Page;
@@ -33,9 +35,11 @@ import java.util.List;
 public class TestHistoryService {
 
     private final TestHistoryRepository testHistoryRepository;
+    private final AppProperties appProperties;
 
-    public TestHistoryService(TestHistoryRepository testHistoryRepository) {
+    public TestHistoryService(TestHistoryRepository testHistoryRepository, AppProperties appProperties) {
         this.testHistoryRepository = testHistoryRepository;
+        this.appProperties = appProperties;
     }
 
     /**
@@ -46,6 +50,9 @@ public class TestHistoryService {
     @PostConstruct
     @Transactional
     public void seedInitialHistoriesIfEmpty() {
+        if (!appProperties.getTestHistory().isSeedEnabled()) {
+            return;
+        }
         if (testHistoryRepository.count() > 0) {
             return;
         }
@@ -172,7 +179,7 @@ public class TestHistoryService {
     @Transactional(readOnly = true)
     public TestHistoryDetailResponse detail(Long id) {
         TestHistory history = testHistoryRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Test history not found: id=" + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Test history not found: id=" + id));
         return TestHistoryDetailResponse.from(history);
     }
 

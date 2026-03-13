@@ -43,8 +43,15 @@ public class KiccPayloadFactory {
         fields.put("timestamp", timestamp);
         fields.put("signature", hmacSha256Hex(signatureBase, appProperties.getPayment().getKicc().getMerchantKey()));
         fields.put("returnUrl", appProperties.getFrontendUrl() + "/result?orderId=" + payment.getOrderId());
-        fields.put("callbackUrl", "http://localhost:8080/api/payments/kicc/callback");
+        fields.put("callbackUrl", normalizeBaseUrl(appProperties.getBackendUrl()) + "/api/payments/kicc/callback");
         return fields;
+    }
+
+    private String normalizeBaseUrl(String baseUrl) {
+        if (baseUrl.endsWith("/")) {
+            return baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        return baseUrl;
     }
 
     private String hmacSha256Hex(String data, String key) {

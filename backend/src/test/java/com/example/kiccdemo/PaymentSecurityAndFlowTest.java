@@ -61,10 +61,12 @@ class PaymentSecurityAndFlowTest {
     void callbackDoesNotOverrideCanceledPayment() throws Exception {
         String orderId = createReadyOrder(null, "cancel-safe-1");
 
-        mockMvc.perform(post("/api/payments/{orderId}/mock-approve", orderId))
+        mockMvc.perform(post("/api/payments/{orderId}/mock-approve", orderId)
+                        .header("X-Admin-Token", "test-admin-token-1234"))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(post("/api/payments/{orderId}/mock-cancel", orderId))
+        mockMvc.perform(post("/api/payments/{orderId}/mock-cancel", orderId)
+                        .header("X-Admin-Token", "test-admin-token-1234"))
                 .andExpect(status().isOk());
 
         String signature = sign(orderId + "|0000|TX-LATE", "TEST_KEY");

@@ -14,9 +14,11 @@ spring:
       ddl-auto: create-drop
 
 app:
+  backend-url: http://localhost:8080
   security:
     # 테스트 전용 관리자 토큰
     admin-token: test-admin-token-1234
+    allow-generated-admin-token: false
   payment:
     kicc:
       merchant-id: TEST_MID
@@ -25,3 +27,5 @@ app:
       use-mock-approve: true
       # 테스트는 보안 회귀 확인을 위해 서명 검증을 강제합니다.
       callback-signature-required: true
+  test-history:
+    seed-enabled: false
