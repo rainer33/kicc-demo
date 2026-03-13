@@ -2,13 +2,31 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
-ENV_FILE="${ROOT_DIR}/.env.local"
+MODE="${1:-docker}"
+
+case "${MODE}" in
+  docker)
+    ENV_FILE="${ROOT_DIR}/.env.docker"
+    ;;
+  nodocker|local)
+    ENV_FILE="${ROOT_DIR}/.env.nodocker"
+    ;;
+  *)
+    echo "Unknown mode: ${MODE}"
+    echo "Usage: ./bootrun [docker|nodocker]"
+    exit 1
+    ;;
+esac
 
 if [[ -f "${ENV_FILE}" ]]; then
   set -a
   # shellcheck disable=SC1090
   source "${ENV_FILE}"
   set +a
+else
+  echo "Env file not found: ${ENV_FILE}"
+  echo "Create the file first."
+  exit 1
 fi
 
 if [[ -z "${ADMIN_TOKEN:-}" ]]; then

@@ -3,7 +3,7 @@
 ## 실행 명령어
 프로젝트 루트에서 실행:
 ```bash
-./bootrun
+./bootrun docker
 ```
 
 프론트엔드(dev) 실행:
@@ -17,18 +17,37 @@ cd backend
 ./gradlew bootRun
 ```
 
+도커 없이(회사 환경) 실행:
+```bash
+./bootrun nodocker
+```
+
+## 사내 망(외부 차단) 실행 가이드
+- 권장 모드: `./bootrun nodocker`
+- 결제 Mock 유지: `.env.nodocker`에서 `KICC_USE_MOCK_APPROVE=true`
+- DB는 사내망 DB로 연결:
+  - `SPRING_DATASOURCE_URL`
+  - `SPRING_DATASOURCE_USERNAME`
+  - `SPRING_DATASOURCE_PASSWORD`
+- Redis는 선택(없어도 fallback 동작)이나 운영 안정성 측면에서 권장
+- 외부 차단 시 `https://pg.kicc.co.kr` 실접속/실승인 테스트는 불가
+- 최초 빌드 의존성 대응 필요:
+  - `gradle`, `npm` 의존성을 사내 Nexus/Artifactory로 연결하거나
+  - 사전에 캐시/산출물(JAR, node_modules 등) 반입
+
 ## 빠른 실행
 루트에서:
 ```bash
-./bootrun
+./bootrun docker
 ```
 새 터미널에서:
 ```bash
 ./run
 ```
 
-- `bootrun`은 backend의 `./gradlew bootRun` 실행
-- bootRun 시 `backend/compose.yaml`로 MariaDB + Redis 자동 기동
+- `bootrun docker`는 `.env.docker`를 로드한 뒤 backend의 `./gradlew bootRun` 실행
+- `bootrun nodocker`는 `.env.nodocker`를 로드한 뒤 backend의 `./gradlew bootRun` 실행
+- `docker` 모드에서는 bootRun 시 `backend/compose.yaml`로 MariaDB + Redis 자동 기동
 - `bootrun`은 `ADMIN_TOKEN` 미설정 시 개발용 토큰을 자동 생성해 출력
 
 ## 기본 계정/설정
@@ -88,7 +107,7 @@ cd backend
 - `REDIS_USERNAME`
 - `REDIS_PASSWORD`
 
-루트 경로의 `.env.local` 파일에 위 값을 넣어두면 `bootrun` 실행 시 자동으로 로드됩니다.
+루트 경로의 `.env.docker`, `.env.nodocker` 파일을 모드에 맞게 `bootrun`이 자동 로드합니다.
 
 ## 실연동 시 교체 포인트
 - `KiccPayloadFactory`: KICC 실제 필드/서명 규격 반영
