@@ -174,7 +174,11 @@ const requestPayment = async () => {
 const mockApprove = async () => {
   if (!readyData.value) return
   await runAction(async () => {
-    const { data } = await api.post(`/payments/${readyData.value.orderId}/mock-approve`)
+    const { data } = await api.post(
+      `/payments/${readyData.value.orderId}/mock-approve`,
+      {},
+      { headers: getAdminHeaders() }
+    )
     payment.value = data
   }, 'Mock 승인 실패')
 }
@@ -182,7 +186,11 @@ const mockApprove = async () => {
 const mockCancel = async () => {
   if (!readyData.value) return
   await runAction(async () => {
-    const { data } = await api.post(`/payments/${readyData.value.orderId}/mock-cancel`)
+    const { data } = await api.post(
+      `/payments/${readyData.value.orderId}/mock-cancel`,
+      {},
+      { headers: getAdminHeaders() }
+    )
     payment.value = data
   }, '전체취소 실패')
 }
@@ -190,10 +198,14 @@ const mockCancel = async () => {
 const mockRefund = async () => {
   if (!readyData.value) return
   await runAction(async () => {
-    const { data } = await api.post(`/payments/${readyData.value.orderId}/mock-refund`, {
-      amount: refundAmount.value,
-      reason: refundReason.value
-    })
+    const { data } = await api.post(
+      `/payments/${readyData.value.orderId}/mock-refund`,
+      {
+        amount: refundAmount.value,
+        reason: refundReason.value
+      },
+      { headers: getAdminHeaders() }
+    )
     payment.value = data
     await loadRefundHistory()
   }, '부분환불 실패')
@@ -253,6 +265,14 @@ const runAction = async (fn, defaultMessage) => {
   } finally {
     loading.value = false
   }
+}
+
+const getAdminHeaders = () => {
+  const token = adminToken.value?.trim()
+  if (!token) {
+    throw new Error('Admin Token을 먼저 입력하세요.')
+  }
+  return { 'X-Admin-Token': token }
 }
 </script>
 
