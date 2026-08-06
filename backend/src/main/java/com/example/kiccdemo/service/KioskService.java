@@ -1,6 +1,8 @@
 package com.example.kiccdemo.service;
 
 import com.example.kiccdemo.config.AppProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.kiccdemo.dto.KioskPaymentRequest;
 import com.example.kiccdemo.dto.KioskSessionCreateRequest;
 import com.example.kiccdemo.dto.KioskSessionResponse;
@@ -33,17 +35,20 @@ public class KioskService {
     private final PaymentService paymentService;
     private final AppProperties appProperties;
     private final AuditService auditService;
+    private final ObjectMapper objectMapper;
 
     public KioskService(
             KioskSessionRepository kioskSessionRepository,
             PaymentService paymentService,
             AppProperties appProperties,
-            AuditService auditService
+            AuditService auditService,
+            ObjectMapper objectMapper
     ) {
         this.kioskSessionRepository = kioskSessionRepository;
         this.paymentService = paymentService;
         this.appProperties = appProperties;
         this.auditService = auditService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -56,11 +61,17 @@ public class KioskService {
         session.setKioskId(request.getKioskId().trim());
         session.setOrderName(request.getOrderName().trim());
         session.setAmount(request.getAmount());
+        session.setSourceSystem(normalize(request.getSourceSystem()));
+        session.setExternalProductId(normalize(request.getExternalProductId()));
+        session.setCustomerName(normalize(request.getCustomerName()));
+        session.setCustomerPhone(normalize(request.getCustomerPhone()));
+        session.setItemSummary(normalize(request.getItemSummary()));
+        session.setProductMetadataJson(writeJson(request));
         session.setStatus(KioskSessionStatus.CREATED);
         session.setLastMessage("주문 생성 완료");
 
         KioskSession saved = kioskSessionRepository.save(session);
-        auditService.log("KIOSK_SESSION_CREATED", saved.getSessionId(), "kioskId=" + saved.getKioskId());
+        auditService.log("KIOSK_SESSION_CREATED", saved.getSessionId(), buildCreateAuditDetail(saved));
         return KioskSessionResponse.from(saved);
     }
 
@@ -79,8 +90,8 @@ public class KioskService {
         session.setPaymentMethod(request.getPaymentMethod());
 
         PaymentReadyRequest readyRequest = new PaymentReadyRequest();
-        readyRequest.setOrderName("[KIOSK] " + session.getOrderName());
-        readyRequest.setBuyerName("KIOSK-" + session.getKioskId());
+        readyRequest.setOrderName(buildPaymentOrderName(session));
+        readyRequest.setBuyerName(buildBuyerName(session));
         readyRequest.setAmount(session.getAmount());
 
         // 키오스크 플로우는 세션 상태머신(CREATED -> PAYMENT_REQUESTED)으로 중복 요청을 제어합니다.
@@ -180,5 +191,59 @@ public class KioskService {
         if (!appProperties.getPayment().getKicc().isUseMockApprove()) {
             throw new IllegalArgumentException("Kiosk demo requires mock approve mode");
         }
+    }
+
+    private String writeJson(KioskSessionCreateRequest request) {
+        if (request.getProductMetadata() == null || request.getProductMetadata().isNull()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(request.getProductMetadata());
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("productMetadata must be valid JSON", e);
+        }
+    }
+
+    private String buildCreateAuditDetail(KioskSession session) {
+        return trim(
+                "kioskId=" + session.getKioskId()
+                        + ", sourceSystem=" + defaultValue(session.getSourceSystem())
+                        + ", externalProductId=" + defaultValue(session.getExternalProductId()),
+                600
+        );
+    }
+
+    private String buildPaymentOrderName(KioskSession session) {
+        StringBuilder builder = new StringBuilder("[KIOSK] ").append(session.getOrderName());
+        if (session.getExternalProductId() != null) {
+            builder.append(" / ").append(session.getExternalProductId());
+        }
+        return trim(builder.toString(), 120);
+    }
+
+    private String buildBuyerName(KioskSession session) {
+        if (session.getCustomerName() != null) {
+            return trim(session.getCustomerName(), 60);
+        }
+        return trim("KIOSK-" + session.getKioskId(), 60);
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String defaultValue(String value) {
+        return value == null ? "-" : value;
+    }
+
+    private String trim(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength);
     }
 }

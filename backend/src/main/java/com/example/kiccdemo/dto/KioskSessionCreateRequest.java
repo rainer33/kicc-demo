@@ -1,5 +1,6 @@
 package com.example.kiccdemo.dto;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -23,6 +24,18 @@ public class KioskSessionCreateRequest {
     @Digits(integer = 13, fraction = 0)
     private BigDecimal amount;
 
+    private String sourceSystem;
+
+    private String externalProductId;
+
+    private String customerName;
+
+    private String customerPhone;
+
+    private String itemSummary;
+
+    private JsonNode productMetadata;
+
     public String getKioskId() {
         return kioskId;
     }
@@ -45,5 +58,53 @@ public class KioskSessionCreateRequest {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
+    }
+
+    public String getSourceSystem() {
+        return sourceSystem;
+    }
+
+    public void setSourceSystem(String sourceSystem) {
+        this.sourceSystem = sourceSystem;
+    }
+
+    public String getExternalProductId() {
+        return externalProductId;
+    }
+
+    public void setExternalProductId(String externalProductId) {
+        this.externalProductId = externalProductId;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
+    }
+
+    public String getItemSummary() {
+        return itemSummary;
+    }
+
+    public void setItemSummary(String itemSummary) {
+        this.itemSummary = itemSummary;
+    }
+
+    public JsonNode getProductMetadata() {
+        return productMetadata;
+    }
+
+    public void setProductMetadata(JsonNode productMetadata) {
+        this.productMetadata = productMetadata;
     }
 }

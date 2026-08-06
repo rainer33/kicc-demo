@@ -41,6 +41,24 @@ public class KioskSession {
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
+    @Column(length = 80)
+    private String sourceSystem;
+
+    @Column(length = 120)
+    private String externalProductId;
+
+    @Column(length = 80)
+    private String customerName;
+
+    @Column(length = 40)
+    private String customerPhone;
+
+    @Column(length = 600)
+    private String itemSummary;
+
+    @Column(columnDefinition = "TEXT")
+    private String productMetadataJson;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private KioskSessionStatus status;
@@ -98,6 +116,54 @@ public class KioskSession {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
+    }
+
+    public String getSourceSystem() {
+        return sourceSystem;
+    }
+
+    public void setSourceSystem(String sourceSystem) {
+        this.sourceSystem = sourceSystem;
+    }
+
+    public String getExternalProductId() {
+        return externalProductId;
+    }
+
+    public void setExternalProductId(String externalProductId) {
+        this.externalProductId = externalProductId;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        this.customerName = customerName;
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
+    }
+
+    public String getItemSummary() {
+        return itemSummary;
+    }
+
+    public void setItemSummary(String itemSummary) {
+        this.itemSummary = itemSummary;
+    }
+
+    public String getProductMetadataJson() {
+        return productMetadataJson;
+    }
+
+    public void setProductMetadataJson(String productMetadataJson) {
+        this.productMetadataJson = productMetadataJson;
     }
 
     public KioskSessionStatus getStatus() {

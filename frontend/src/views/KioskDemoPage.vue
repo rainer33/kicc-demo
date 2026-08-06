@@ -14,6 +14,23 @@
             <label>주문명<input v-model="createForm.orderName" /></label>
             <label>금액<input v-model.number="createForm.amount" type="number" min="100" /></label>
           </div>
+          <div class="grid3">
+            <label>연동 시스템<input v-model="createForm.sourceSystem" placeholder="sports-club-erp" /></label>
+            <label>외부 상품 ID<input v-model="createForm.externalProductId" placeholder="COURSE-ADULT-TKD-2026-001" /></label>
+            <label>고객명<input v-model="createForm.customerName" placeholder="홍길동" /></label>
+          </div>
+          <div class="grid2">
+            <label>고객 연락처<input v-model="createForm.customerPhone" placeholder="010-1234-5678" /></label>
+            <label>상품 요약<input v-model="createForm.itemSummary" placeholder="주 2회 / 12주 / 성인반" /></label>
+          </div>
+          <label>
+            상품 메타데이터(JSON)
+            <textarea
+              v-model="metadataText"
+              rows="10"
+              placeholder='{"courseId":"COURSE-ADULT-TKD-2026-001"}'
+            />
+          </label>
           <button @click="createSession" :disabled="loading">세션 시작</button>
         </section>
 
@@ -56,12 +73,21 @@
             <li><strong>Kiosk:</strong> {{ session.kioskId }}</li>
             <li><strong>주문:</strong> {{ session.orderName }}</li>
             <li><strong>금액:</strong> {{ session.amount }}</li>
+            <li><strong>연동 시스템:</strong> {{ session.sourceSystem || '-' }}</li>
+            <li><strong>외부 상품 ID:</strong> {{ session.externalProductId || '-' }}</li>
+            <li><strong>고객명:</strong> {{ session.customerName || '-' }}</li>
+            <li><strong>연락처:</strong> {{ session.customerPhone || '-' }}</li>
+            <li><strong>상품 요약:</strong> {{ session.itemSummary || '-' }}</li>
             <li><strong>상태:</strong> <span class="status">{{ session.status }}</span></li>
             <li><strong>수단:</strong> {{ session.paymentMethod || '-' }}</li>
             <li><strong>Order ID:</strong> {{ session.orderId || '-' }}</li>
             <li><strong>단말TX:</strong> {{ session.terminalTransactionId || '-' }}</li>
             <li><strong>메시지:</strong> {{ session.lastMessage || '-' }}</li>
           </ul>
+          <div v-if="session.productMetadata" class="meta-block">
+            <strong>상품 메타데이터</strong>
+            <pre>{{ prettyMetadata(session.productMetadata) }}</pre>
+          </div>
           <button @click="refreshSession" :disabled="loading">상태 새로고침</button>
         </section>
 
@@ -98,9 +124,35 @@ const error = ref('')
 
 const createForm = reactive({
   kioskId: 'KIOSK-01',
-  orderName: '아메리카노',
-  amount: 4500
+  orderName: '성인 특공무술 화목반',
+  amount: 180000,
+  sourceSystem: 'sports-club-erp',
+  externalProductId: 'COURSE-ADULT-TKD-2026-001',
+  customerName: '홍길동',
+  customerPhone: '010-1234-5678',
+  itemSummary: '주 2회 / 12주 / 성인반'
 })
+
+const metadataText = ref(`{
+  "courseId": "COURSE-ADULT-TKD-2026-001",
+  "courseName": "성인 특공무술 화목반",
+  "courseCategory": "martial-arts",
+  "branchId": "SEOUL-MAIN",
+  "scheduleId": "TUE-THU-19:00",
+  "scheduleLabel": "화/목 19:00",
+  "memberId": "MBR-120045",
+  "instructorId": "INS-007",
+  "registrationId": "REG-20260317-0001",
+  "period": {
+    "startDate": "2026-03-20",
+    "endDate": "2026-06-12"
+  },
+  "pricing": {
+    "listPrice": 200000,
+    "discountAmount": 20000,
+    "finalPrice": 180000
+  }
+}`)
 
 const methods = [
   { value: 'CARD', label: '카드' },
@@ -116,7 +168,11 @@ const terminalMessage = ref('카드사 승인')
 
 const createSession = async () => {
   await runAction(async () => {
-    const { data } = await api.post('/kiosk/sessions', createForm)
+    const payload = {
+      ...createForm,
+      productMetadata: metadataText.value.trim() ? JSON.parse(metadataText.value) : null
+    }
+    const { data } = await api.post('/kiosk/sessions', payload)
     session.value = data
     await loadSessions()
   }, '세션 생성 실패')
@@ -189,6 +245,8 @@ const runAction = async (fn, defaultMessage) => {
   }
 }
 
+const prettyMetadata = (value) => JSON.stringify(value, null, 2)
+
 onMounted(async () => {
   await runAction(loadSessions, '세션 목록 조회 실패')
 })
@@ -247,6 +305,16 @@ input {
   border-radius: 10px;
   padding: 10px 12px;
   background: #f9fafb;
+}
+
+textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .grid3 {
@@ -340,6 +408,20 @@ button[disabled] { opacity: 0.5; cursor: not-allowed; }
 
 .empty { margin: 0; color: #6b7280; }
 .error { color: #b42318; font-weight: 700; }
+.meta-block {
+  margin: 12px 0;
+  display: grid;
+  gap: 6px;
+}
+.meta-block pre {
+  margin: 0;
+  padding: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 12px;
+  overflow: auto;
+  font-size: 12px;
+}
 
 @media (max-width: 980px) {
   .kiosk-shell {

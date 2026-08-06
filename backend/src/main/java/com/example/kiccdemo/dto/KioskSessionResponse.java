@@ -1,5 +1,7 @@
 package com.example.kiccdemo.dto;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.kiccdemo.entity.KioskPaymentMethod;
 import com.example.kiccdemo.entity.KioskSession;
 import com.example.kiccdemo.entity.KioskSessionStatus;
@@ -12,10 +14,18 @@ import java.time.LocalDateTime;
  */
 public class KioskSessionResponse {
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private String sessionId;
     private String kioskId;
     private String orderName;
     private BigDecimal amount;
+    private String sourceSystem;
+    private String externalProductId;
+    private String customerName;
+    private String customerPhone;
+    private String itemSummary;
+    private JsonNode productMetadata;
     private KioskSessionStatus status;
     private KioskPaymentMethod paymentMethod;
     private String orderId;
@@ -30,6 +40,12 @@ public class KioskSessionResponse {
         response.kioskId = session.getKioskId();
         response.orderName = session.getOrderName();
         response.amount = session.getAmount();
+        response.sourceSystem = session.getSourceSystem();
+        response.externalProductId = session.getExternalProductId();
+        response.customerName = session.getCustomerName();
+        response.customerPhone = session.getCustomerPhone();
+        response.itemSummary = session.getItemSummary();
+        response.productMetadata = parseJson(session.getProductMetadataJson());
         response.status = session.getStatus();
         response.paymentMethod = session.getPaymentMethod();
         response.orderId = session.getOrderId();
@@ -38,6 +54,17 @@ public class KioskSessionResponse {
         response.createdAt = session.getCreatedAt();
         response.updatedAt = session.getUpdatedAt();
         return response;
+    }
+
+    private static JsonNode parseJson(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return OBJECT_MAPPER.readTree(value);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     public String getSessionId() {
@@ -54,6 +81,30 @@ public class KioskSessionResponse {
 
     public BigDecimal getAmount() {
         return amount;
+    }
+
+    public String getSourceSystem() {
+        return sourceSystem;
+    }
+
+    public String getExternalProductId() {
+        return externalProductId;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public String getItemSummary() {
+        return itemSummary;
+    }
+
+    public JsonNode getProductMetadata() {
+        return productMetadata;
     }
 
     public KioskSessionStatus getStatus() {
